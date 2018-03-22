@@ -41,6 +41,7 @@ namespace reshade::d3d9
 		bool on_init(const D3DPRESENT_PARAMETERS &pp);
 		void on_reset();
 		void on_present();
+		void on_clear();
 		void on_draw_call(D3DPRIMITIVETYPE type, UINT count);
 		void on_set_depthstencil_surface(IDirect3DSurface9 *&depthstencil);
 		void on_get_depthstencil_surface(IDirect3DSurface9 *&depthstencil);
@@ -48,7 +49,7 @@ namespace reshade::d3d9
 		void capture_frame(uint8_t *buffer) const override;
 		bool load_effect(const reshadefx::syntax_tree &ast, std::string &errors) override;
 		bool update_texture(texture &texture, const uint8_t *data) override;
-		bool update_texture_reference(texture &texture, texture_reference id);
+		bool update_texture_reference(texture &texture, texture_reference id, bool on_clear);
 
 		void render_technique(const technique &technique) override;
 		void render_imgui_draw_data(ImDrawData *data) override;
@@ -61,6 +62,7 @@ namespace reshade::d3d9
 		com_ptr<IDirect3DTexture9> _backbuffer_texture;
 		com_ptr<IDirect3DSurface9> _backbuffer_texture_surface;
 		com_ptr<IDirect3DTexture9> _depthstencil_texture;
+		com_ptr<IDirect3DTexture9> _cleared_depthstencil_texture;
 
 	private:
 		struct depth_source_info
@@ -90,5 +92,6 @@ namespace reshade::d3d9
 		com_ptr<IDirect3DVertexBuffer9> _imgui_vertex_buffer;
 		com_ptr<IDirect3DIndexBuffer9> _imgui_index_buffer;
 		int _imgui_vertex_buffer_size = 0, _imgui_index_buffer_size = 0;
+		unsigned int _clear_DSV_iter = 1;
 	};
 }

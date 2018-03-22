@@ -246,7 +246,23 @@ namespace reshade::d3d9
 			return;
 		}
 
-		detect_depth_source();
+		if (depth_buffer_retrieval_mode != depth_buffer_retrieval_mode::before_clearing_stage)
+		{
+			detect_depth_source();
+		}
+		else
+		{
+			// Update effect textures
+			for (auto &texture : _textures)
+			{
+				if (texture.impl_reference == texture_reference::depth_buffer)
+				{
+					update_texture_reference(texture, texture_reference::depth_buffer, true);
+				}
+			}
+		}
+
+		_clear_DSV_iter = 1;
 
 		// Begin post processing
 		if (FAILED(_device->BeginScene()))
@@ -324,6 +340,106 @@ namespace reshade::d3d9
 
 		// End post processing
 		_device->EndScene();
+	}
+	void d3d9_runtime::on_clear()
+	{
+		if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
+		{
+			static int cooldown = 0, traffic = 0;
+
+			if (_is_multisampling_enabled || _depth_source_table.empty())
+			{
+				return;
+			}
+
+			depth_source_info best_info = { 0 };
+			IDirect3DSurface9 *best_match = nullptr;
+
+			for (auto it = _depth_source_table.begin(); it != _depth_source_table.end();)
+			{
+				const auto depthstencil = it->first;
+				auto &depthstencil_info = it->second;
+
+				if ((depthstencil->AddRef(), depthstencil->Release()) == 1)
+				{
+					depthstencil->Release();
+
+					it = _depth_source_table.erase(it);
+					continue;
+				}
+				else
+				{
+					++it;
+				}
+
+				if (depthstencil_info.drawcall_count == 0)
+				{
+					continue;
+				}
+
+				if (depthstencil_info.vertices_count >= best_info.vertices_count)
+				{
+					best_match = depthstencil;
+					best_info = depthstencil_info;
+				}
+
+				depthstencil_info.drawcall_count = depthstencil_info.vertices_count = 0;
+			}
+
+			if (best_match != nullptr)
+			{
+
+				if (best_match != nullptr)
+				{
+					D3DSURFACE_DESC desc;
+					best_match->GetDesc(&desc);
+
+					if (desc.Format != D3DFMT_INTZ && desc.Format != D3DFMT_DF16 && desc.Format != D3DFMT_DF24)
+					{
+						D3DDISPLAYMODE displaymode;
+						_swapchain->GetDisplayMode(&displaymode);
+						D3DDEVICE_CREATION_PARAMETERS creation_params;
+						_device->GetCreationParameters(&creation_params);
+
+						desc.Format = D3DFMT_UNKNOWN;
+						const D3DFORMAT formats[] = { D3DFMT_INTZ, D3DFMT_DF24, D3DFMT_DF16 };
+
+						for (const auto format : formats)
+						{
+							if (SUCCEEDED(_d3d->CheckDeviceFormat(creation_params.AdapterOrdinal, creation_params.DeviceType, displaymode.Format, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE, format)))
+							{
+								desc.Format = format;
+								break;
+							}
+						}
+
+						if (desc.Format == D3DFMT_UNKNOWN)
+						{
+							LOG(ERROR) << "Your graphics card is missing support for at least one of the 'INTZ', 'DF24' or 'DF16' texture formats. Cannot create depth replacement texture.";
+							return;
+						}
+
+						_cleared_depthstencil_texture.reset();
+						const HRESULT hr = _device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_DEPTHSTENCIL, desc.Format, D3DPOOL_DEFAULT, &_cleared_depthstencil_texture, nullptr);
+
+						if (SUCCEEDED(hr) && best_match != nullptr)
+						{
+							if (depth_buffer_clearing_number == 0 || _clear_DSV_iter == depth_buffer_clearing_number)
+							{
+								_depthstencil_replacement.reset();
+								_cleared_depthstencil_texture->GetSurfaceLevel(0, &_depthstencil_replacement);
+							}
+						}
+						else
+						{
+							LOG(ERROR) << "Failed to create depth replacement texture! HRESULT is '" << std::hex << hr << std::dec << "'.";
+							return;
+						}
+					}
+				}
+			}
+			_clear_DSV_iter++;
+		}
 	}
 	void d3d9_runtime::on_draw_call(D3DPRIMITIVETYPE type, UINT vertices)
 	{
@@ -544,7 +660,7 @@ namespace reshade::d3d9
 
 		return true;
 	}
-	bool d3d9_runtime::update_texture_reference(texture &texture, texture_reference id)
+	bool d3d9_runtime::update_texture_reference(texture &texture, texture_reference id, bool on_clear)
 	{
 		com_ptr<IDirect3DTexture9> new_reference;
 
@@ -554,7 +670,14 @@ namespace reshade::d3d9
 				new_reference = _backbuffer_texture;
 				break;
 			case texture_reference::depth_buffer:
-				new_reference = _depthstencil_texture;
+				if (on_clear == true)
+				{
+					new_reference = _cleared_depthstencil_texture;
+				}
+				else
+				{
+					new_reference = _depthstencil_texture;
+				}
 				break;
 			default:
 				return false;
@@ -975,7 +1098,7 @@ namespace reshade::d3d9
 		{
 			if (texture.impl_reference == texture_reference::depth_buffer)
 			{
-				update_texture_reference(texture, texture_reference::depth_buffer);
+				update_texture_reference(texture, texture_reference::depth_buffer, false);
 			}
 		}
 

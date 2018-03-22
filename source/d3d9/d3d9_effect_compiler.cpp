@@ -1495,11 +1495,11 @@ namespace reshade::d3d9
 
 		if (node->semantic == "COLOR" || node->semantic == "SV_TARGET")
 		{
-			_runtime->update_texture_reference(obj, texture_reference::back_buffer);
+			_runtime->update_texture_reference(obj, texture_reference::back_buffer, false);
 		}
 		else if (node->semantic == "DEPTH" || node->semantic == "SV_DEPTH")
 		{
-			_runtime->update_texture_reference(obj, texture_reference::depth_buffer);
+			_runtime->update_texture_reference(obj, texture_reference::depth_buffer, false);
 		}
 		else if (!node->semantic.empty())
 		{

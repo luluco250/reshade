@@ -453,6 +453,8 @@ HRESULT STDMETHODCALLTYPE Direct3DDevice9::Clear(DWORD Count, const D3DRECT *pRe
 {
 	if (Flags == 6)
 	{
+		com_ptr<IDirect3DSurface9> tmp;
+		GetDepthStencilSurface(&tmp);
 		_implicit_swapchain->_runtime->on_clear();
 	}
 

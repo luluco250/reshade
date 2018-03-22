@@ -1,7 +1,7 @@
 /**
- * Copyright (C) 2014 Patrick Mours. All rights reserved.
- * License: https://github.com/crosire/reshade#license
- */
+* Copyright (C) 2014 Patrick Mours. All rights reserved.
+* License: https://github.com/crosire/reshade#license
+*/
 
 #include "log.hpp"
 #include "d3d9_runtime.hpp"
@@ -54,12 +54,12 @@ namespace reshade::d3d9
 		{
 			switch (_backbuffer_format)
 			{
-				case D3DFMT_X8R8G8B8:
-					_backbuffer_format = D3DFMT_A8R8G8B8;
-					break;
-				case D3DFMT_X8B8G8R8:
-					_backbuffer_format = D3DFMT_A8B8G8R8;
-					break;
+			case D3DFMT_X8R8G8B8:
+				_backbuffer_format = D3DFMT_A8R8G8B8;
+				break;
+			case D3DFMT_X8B8G8R8:
+				_backbuffer_format = D3DFMT_A8B8G8R8;
+				break;
 			}
 
 			hr = _device->CreateRenderTarget(_width, _height, _backbuffer_format, D3DMULTISAMPLE_NONE, 0, FALSE, &_backbuffer_resolved, nullptr);
@@ -220,6 +220,7 @@ namespace reshade::d3d9
 		_depthstencil.reset();
 		_depthstencil_replacement.reset();
 		_depthstencil_texture.reset();
+		_cleared_depthstencil_texture.reset();
 
 		_default_depthstencil.reset();
 
@@ -445,19 +446,19 @@ namespace reshade::d3d9
 	{
 		switch (type)
 		{
-			case D3DPT_LINELIST:
-				vertices *= 2;
-				break;
-			case D3DPT_LINESTRIP:
-				vertices += 1;
-				break;
-			case D3DPT_TRIANGLELIST:
-				vertices *= 3;
-				break;
-			case D3DPT_TRIANGLESTRIP:
-			case D3DPT_TRIANGLEFAN:
-				vertices += 2;
-				break;
+		case D3DPT_LINELIST:
+			vertices *= 2;
+			break;
+		case D3DPT_LINESTRIP:
+			vertices += 1;
+			break;
+		case D3DPT_TRIANGLELIST:
+			vertices *= 3;
+			break;
+		case D3DPT_TRIANGLESTRIP:
+		case D3DPT_TRIANGLEFAN:
+			vertices += 2;
+			break;
 		}
 
 		_vertices += vertices;
@@ -496,7 +497,7 @@ namespace reshade::d3d9
 			{
 				return;
 			}
-	
+
 			depthstencil->AddRef();
 
 			// Begin tracking
@@ -622,30 +623,30 @@ namespace reshade::d3d9
 
 		switch (texture.format)
 		{
-			case texture_format::r8:
-				for (UINT i = 0; i < size; i += 4, mapped_data += 4)
-					mapped_data[0] = 0,
-					mapped_data[1] = 0,
-					mapped_data[2] = data[i],
-					mapped_data[3] = 0;
-				break;
-			case texture_format::rg8:
-				for (UINT i = 0; i < size; i += 4, mapped_data += 4)
-					mapped_data[0] = 0,
-					mapped_data[1] = data[i + 1],
-					mapped_data[2] = data[i],
-					mapped_data[3] = 0;
-				break;
-			case texture_format::rgba8:
-				for (UINT i = 0; i < size; i += 4, mapped_data += 4)
-					mapped_data[0] = data[i + 2],
-					mapped_data[1] = data[i + 1],
-					mapped_data[2] = data[i],
-					mapped_data[3] = data[i + 3];
-				break;
-			default:
-				std::memcpy(mapped_data, data, size);
-				break;
+		case texture_format::r8:
+			for (UINT i = 0; i < size; i += 4, mapped_data += 4)
+				mapped_data[0] = 0,
+				mapped_data[1] = 0,
+				mapped_data[2] = data[i],
+				mapped_data[3] = 0;
+			break;
+		case texture_format::rg8:
+			for (UINT i = 0; i < size; i += 4, mapped_data += 4)
+				mapped_data[0] = 0,
+				mapped_data[1] = data[i + 1],
+				mapped_data[2] = data[i],
+				mapped_data[3] = 0;
+			break;
+		case texture_format::rgba8:
+			for (UINT i = 0; i < size; i += 4, mapped_data += 4)
+				mapped_data[0] = data[i + 2],
+				mapped_data[1] = data[i + 1],
+				mapped_data[2] = data[i],
+				mapped_data[3] = data[i + 3];
+			break;
+		default:
+			std::memcpy(mapped_data, data, size);
+			break;
 		}
 
 		mem_texture->UnlockRect(0);
@@ -666,21 +667,21 @@ namespace reshade::d3d9
 
 		switch (id)
 		{
-			case texture_reference::back_buffer:
-				new_reference = _backbuffer_texture;
-				break;
-			case texture_reference::depth_buffer:
-				if (on_clear == true)
-				{
-					new_reference = _cleared_depthstencil_texture;
-				}
-				else
-				{
-					new_reference = _depthstencil_texture;
-				}
-				break;
-			default:
-				return false;
+		case texture_reference::back_buffer:
+			new_reference = _backbuffer_texture;
+			break;
+		case texture_reference::depth_buffer:
+			if (on_clear == true)
+			{
+				new_reference = _cleared_depthstencil_texture;
+			}
+			else
+			{
+				new_reference = _depthstencil_texture;
+			}
+			break;
+		default:
+			return false;
 		}
 
 		texture.impl_reference = id;
@@ -1016,9 +1017,12 @@ namespace reshade::d3d9
 			depthstencil_info.drawcall_count = depthstencil_info.vertices_count = 0;
 		}
 
-		if (best_match != nullptr && _depthstencil != best_match)
+		if (best_match != nullptr)
 		{
-			create_depthstencil_replacement(best_match);
+			if (_depthstencil != best_match || depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
+			{
+				create_depthstencil_replacement(best_match);
+			}
 		}
 	}
 	bool d3d9_runtime::create_depthstencil_replacement(IDirect3DSurface9 *depthstencil)
@@ -1098,7 +1102,7 @@ namespace reshade::d3d9
 		{
 			if (texture.impl_reference == texture_reference::depth_buffer)
 			{
-				update_texture_reference(texture, texture_reference::depth_buffer, false);
+				update_texture_reference(texture, texture_reference::depth_buffer, (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage));
 			}
 		}
 

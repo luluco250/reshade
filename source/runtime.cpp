@@ -1233,7 +1233,7 @@ namespace reshade
 				}
 
 				ImGui::SetNextWindowPos(ImVec2(_width * 0.5f, _height * 0.5f), ImGuiCond_Once, ImVec2(0.5f, 0.5f));
-				ImGui::SetNextWindowSize(ImVec2(710, 650), ImGuiCond_Once);
+				ImGui::SetNextWindowSize(ImVec2(710, 850), ImGuiCond_Once);
 				ImGui::Begin("ReShade " VERSION_STRING_FILE " by crosire###Main", &_show_menu,
 					ImGuiWindowFlags_MenuBar |
 					ImGuiWindowFlags_NoCollapse);
@@ -1785,9 +1785,10 @@ namespace reshade
 			}
 		}
 
-		// const bool is_d3d11 = (_renderer_id & 0xb000) != 0;
+		const bool is_d3d11 = (_renderer_id & 0xb000) != 0;
+		const bool is_d3d9 = (_renderer_id & 0x9300) != 0;
 
-		if (ImGui::CollapsingHeader("Buffer Detection", ImGuiTreeNodeFlags_DefaultOpen))
+		if ((is_d3d11 || is_d3d9) && ImGui::CollapsingHeader("Buffer Detection", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			assert(_menu_key_data[0] < 256);
 

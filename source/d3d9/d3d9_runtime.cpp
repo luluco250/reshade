@@ -967,7 +967,15 @@ namespace reshade::d3d9
 				continue;
 			}
 
-			if ((depthstencil_info.vertices_count * (1.2f - float(depthstencil_info.drawcall_count) / _drawcalls)) >= (best_info.vertices_count * (1.2f - float(best_info.drawcall_count) / _drawcalls)))
+			if (depth_buffer_retrieval_mode != depth_buffer_retrieval_mode::before_clearing_stage)
+			{
+				if ((depthstencil_info.vertices_count * (1.2f - float(depthstencil_info.drawcall_count) / _drawcalls)) >= (best_info.vertices_count * (1.2f - float(best_info.drawcall_count) / _drawcalls)))
+				{
+					best_match = depthstencil;
+					best_info = depthstencil_info;
+				}
+			}
+			else if (depthstencil_info.vertices_count >= best_info.vertices_count)
 			{
 				best_match = depthstencil;
 				best_info = depthstencil_info;

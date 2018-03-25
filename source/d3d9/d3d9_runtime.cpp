@@ -40,6 +40,7 @@ namespace reshade::d3d9
 		_behavior_flags = creation_params.BehaviorFlags;
 		_num_samplers = caps.MaxSimultaneousTextures;
 		_num_simultaneous_rendertargets = std::min(caps.NumSimultaneousRTs, DWORD(8));
+		is_d3d9 = true;
 	}
 
 	bool d3d9_runtime::init_backbuffer_texture()
@@ -220,7 +221,6 @@ namespace reshade::d3d9
 		_depthstencil.reset();
 		_depthstencil_replacement.reset();
 		_depthstencil_texture.reset();
-		_cleared_depthstencil_texture.reset();
 
 		_default_depthstencil.reset();
 
@@ -247,22 +247,7 @@ namespace reshade::d3d9
 			return;
 		}
 
-		if (depth_buffer_retrieval_mode != depth_buffer_retrieval_mode::before_clearing_stage)
-		{
-			detect_depth_source();
-		}
-		else
-		{
-			detect_depth_source();
-			// Update effect textures
-			for (auto &texture : _textures)
-			{
-				if (texture.impl_reference == texture_reference::depth_buffer)
-				{
-					update_texture_reference(texture, texture_reference::depth_buffer, true);
-				}
-			}
-		}
+		detect_depth_source((depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage));
 
 		_clear_DSV_iter = 1;
 
@@ -347,55 +332,7 @@ namespace reshade::d3d9
 	{
 		if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
 		{
-			if (best_match != nullptr)
-			{
-				D3DSURFACE_DESC desc;
-				best_match->GetDesc(&desc);
-
-				if (desc.Format != D3DFMT_INTZ && desc.Format != D3DFMT_DF16 && desc.Format != D3DFMT_DF24)
-				{
-					D3DDISPLAYMODE displaymode;
-					_swapchain->GetDisplayMode(&displaymode);
-					D3DDEVICE_CREATION_PARAMETERS creation_params;
-					_device->GetCreationParameters(&creation_params);
-
-					desc.Format = D3DFMT_UNKNOWN;
-					const D3DFORMAT formats[] = { D3DFMT_INTZ, D3DFMT_DF24, D3DFMT_DF16 };
-
-					for (const auto format : formats)
-					{
-						if (SUCCEEDED(_d3d->CheckDeviceFormat(creation_params.AdapterOrdinal, creation_params.DeviceType, displaymode.Format, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE, format)))
-						{
-							desc.Format = format;
-							break;
-						}
-					}
-
-					if (desc.Format == D3DFMT_UNKNOWN)
-					{
-						LOG(ERROR) << "Your graphics card is missing support for at least one of the 'INTZ', 'DF24' or 'DF16' texture formats. Cannot create depth replacement texture.";
-						return;
-					}
-
-					_cleared_depthstencil_texture.reset();
-					const HRESULT hr = _device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_DEPTHSTENCIL, desc.Format, D3DPOOL_DEFAULT, &_cleared_depthstencil_texture, nullptr);
-
-					if (SUCCEEDED(hr) && best_match != nullptr)
-					{
-						if (depth_buffer_clearing_number == 0 || _clear_DSV_iter == depth_buffer_clearing_number)
-						{
-							_depthstencil_replacement.reset();
-							_cleared_depthstencil_texture->GetSurfaceLevel(0, &_depthstencil_replacement);
-						}
-					}
-					else
-					{
-						LOG(ERROR) << "Failed to create depth replacement texture! HRESULT is '" << std::hex << hr << std::dec << "'.";
-						return;
-					}
-				}
-			}
-			_clear_DSV_iter++;
+			detect_depth_source(true);
 		}
 	}
 	void d3d9_runtime::on_draw_call(D3DPRIMITIVETYPE type, UINT vertices)
@@ -617,7 +554,7 @@ namespace reshade::d3d9
 
 		return true;
 	}
-	bool d3d9_runtime::update_texture_reference(texture &texture, texture_reference id, bool on_clear)
+	bool d3d9_runtime::update_texture_reference(texture &texture, texture_reference id)
 	{
 		com_ptr<IDirect3DTexture9> new_reference;
 
@@ -627,14 +564,7 @@ namespace reshade::d3d9
 			new_reference = _backbuffer_texture;
 			break;
 		case texture_reference::depth_buffer:
-			if (on_clear == true)
-			{
-				new_reference = _cleared_depthstencil_texture;
-			}
-			else
-			{
-				new_reference = _depthstencil_texture;
-			}
+			new_reference = _depthstencil_texture;
 			break;
 		default:
 			return false;
@@ -909,14 +839,14 @@ namespace reshade::d3d9
 		}
 	}
 
-	void d3d9_runtime::detect_depth_source()
+	void d3d9_runtime::detect_depth_source(bool on_clear)
 	{
 		static int cooldown = 0, traffic = 0;
 
 		if (cooldown-- > 0)
 		{
 			traffic += g_network_traffic > 0;
-			if (depth_buffer_retrieval_mode != depth_buffer_retrieval_mode::before_clearing_stage)
+			if (on_clear == false)
 			{
 				return;
 			}
@@ -928,7 +858,7 @@ namespace reshade::d3d9
 			if (traffic > 10)
 			{
 				traffic = 0;
-				create_depthstencil_replacement(nullptr);
+				create_depthstencil_replacement(nullptr, false);
 				return;
 			}
 			else
@@ -986,13 +916,13 @@ namespace reshade::d3d9
 
 		if (best_match != nullptr)
 		{
-			if (_depthstencil != best_match)
+			if (on_clear == true || _depthstencil != best_match)
 			{
-				create_depthstencil_replacement(best_match.get());
+				create_depthstencil_replacement(best_match.get(), on_clear);
 			}
 		}
 	}
-	bool d3d9_runtime::create_depthstencil_replacement(IDirect3DSurface9 *depthstencil)
+	bool d3d9_runtime::create_depthstencil_replacement(IDirect3DSurface9 *depthstencil, bool on_clear)
 	{
 		_depthstencil.reset();
 		_depthstencil_replacement.reset();
@@ -1043,7 +973,7 @@ namespace reshade::d3d9
 
 					if (current_depthstencil != nullptr)
 					{
-						if (current_depthstencil == _depthstencil)
+						if (on_clear == true || current_depthstencil == _depthstencil)
 						{
 							_device->SetDepthStencilSurface(_depthstencil_replacement.get());
 						}
@@ -1069,7 +999,7 @@ namespace reshade::d3d9
 		{
 			if (texture.impl_reference == texture_reference::depth_buffer)
 			{
-				update_texture_reference(texture, texture_reference::depth_buffer, (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage));
+				update_texture_reference(texture, texture_reference::depth_buffer);
 			}
 		}
 

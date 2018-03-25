@@ -155,6 +155,9 @@ namespace reshade
 		/// Callback function called to apply the post-processing effects to the screen.
 		/// </summary>
 		void on_present_effect();
+		bool is_d3d9 = false;
+		bool is_d3d10 = false;
+		bool is_d3d11 = false;
 
 		/// <summary>
 		/// Compile effect from the specified source file and initialize textures, constants and techniques.
@@ -207,6 +210,7 @@ namespace reshade
 
 	private:
 		static bool check_for_update(unsigned long latest_version[3]);
+		bool _isd3d11();
 
 		void reload();
 		void load_configuration();

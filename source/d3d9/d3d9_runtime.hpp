@@ -49,7 +49,7 @@ namespace reshade::d3d9
 		void capture_frame(uint8_t *buffer) const override;
 		bool load_effect(const reshadefx::syntax_tree &ast, std::string &errors) override;
 		bool update_texture(texture &texture, const uint8_t *data) override;
-		bool update_texture_reference(texture &texture, texture_reference id, bool on_clear);
+		bool update_texture_reference(texture &texture, texture_reference id);
 
 		void render_technique(const technique &technique) override;
 		void render_imgui_draw_data(ImDrawData *data) override;
@@ -62,7 +62,6 @@ namespace reshade::d3d9
 		com_ptr<IDirect3DTexture9> _backbuffer_texture;
 		com_ptr<IDirect3DSurface9> _backbuffer_texture_surface;
 		com_ptr<IDirect3DTexture9> _depthstencil_texture;
-		com_ptr<IDirect3DTexture9> _cleared_depthstencil_texture;
 
 	private:
 		struct depth_source_info
@@ -76,8 +75,8 @@ namespace reshade::d3d9
 		bool init_fx_resources();
 		bool init_imgui_font_atlas();
 
-		void detect_depth_source();
-		bool create_depthstencil_replacement(IDirect3DSurface9 *depthstencil);
+		void detect_depth_source(bool on_clear);
+		bool create_depthstencil_replacement(IDirect3DSurface9 *depthstencil, bool on_clear);
 
 		UINT _behavior_flags, _num_simultaneous_rendertargets, _num_samplers;
 		bool _is_multisampling_enabled = false;

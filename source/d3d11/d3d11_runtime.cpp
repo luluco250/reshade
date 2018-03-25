@@ -46,6 +46,7 @@ namespace reshade::d3d11
 
 		_vendor_id = adapter_desc.VendorId;
 		_device_id = adapter_desc.DeviceId;
+		is_d3d11 = true;
 	}
 
 	bool d3d11_runtime::init_backbuffer_texture()

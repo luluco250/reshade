@@ -137,6 +137,9 @@ namespace reshade
 
 		_width = _height = 0;
 		_is_initialized = false;
+		is_d3d9 = false;
+		is_d3d10 = false;
+		is_d3d11 = false;
 	}
 	void runtime::on_reset_effect()
 	{
@@ -1785,16 +1788,13 @@ namespace reshade
 			}
 		}
 
-		const bool is_d3d11 = (_renderer_id & 0xb000) != 0;
-		const bool is_d3d9 = (_renderer_id & 0x9300) != 0;
-
 		if ((is_d3d11 || is_d3d9) && ImGui::CollapsingHeader("Buffer Detection", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			assert(_menu_key_data[0] < 256);
 
 			int depth_buffer_retrieval_mode_index = depth_buffer_retrieval_mode;
 
-			if (ImGui::Combo("Depth detection retrieval mode", &depth_buffer_retrieval_mode_index, "Post Process\0Before Clearing\0At Output Merger Stage\0"))
+			if (ImGui::Combo("Depth detection retrieval mode", &depth_buffer_retrieval_mode_index, (is_d3d11 == true) ? "Post Process\0Before Clearing\0At Output Merger Stage\0" : "Post Process\0Before Clearing\0"))
 			{
 				_depth_buffer_settings_changed = true;
 				depth_buffer_retrieval_mode = depth_buffer_retrieval_mode_index;
@@ -1802,7 +1802,7 @@ namespace reshade
 				save_configuration();
 			}
 
-			if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
+			if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage && is_d3d11 == true)
 			{
 				int depth_buffer_clearing_number_index = depth_buffer_clearing_number;
 
@@ -1815,11 +1815,14 @@ namespace reshade
 				}
 			}
 
-			if (ImGui::Combo("Depth texture format", &_depth_buffer_texture_format, "DXGI_FORMAT_UNKNOWN\0DXGI_FORMAT_R16_TYPELESS\0DXGI_FORMAT_R32_TYPELESS\0DXGI_FORMAT_R24G8_TYPELESS\0DXGI_FORMAT_R32G8X24_TYPELESS\0"))
+			if (is_d3d11 == true)
 			{
-				_depth_buffer_settings_changed = true;
+				if (ImGui::Combo("Depth texture format", &_depth_buffer_texture_format, "DXGI_FORMAT_UNKNOWN\0DXGI_FORMAT_R16_TYPELESS\0DXGI_FORMAT_R32_TYPELESS\0DXGI_FORMAT_R24G8_TYPELESS\0DXGI_FORMAT_R32G8X24_TYPELESS\0"))
+				{
+					_depth_buffer_settings_changed = true;
 
-				save_configuration();
+					save_configuration();
+				}
 			}
 		}
 

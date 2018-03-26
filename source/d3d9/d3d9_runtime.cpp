@@ -218,10 +218,36 @@ namespace reshade::d3d9
 		_backbuffer_texture.reset();
 		_backbuffer_texture_surface.reset();
 
-		_depthstencil.reset();
-		_depthstencil_replacement.reset();
+		if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
+		{
+			if (_depthstencil != nullptr)
+			{
+				while ((_depthstencil->AddRef(), _depthstencil->Release()) > 1)
+				{
+					_depthstencil->Release();
+				}
+			}
+			if (_depthstencil_replacement != nullptr)
+			{
+				while ((_depthstencil_replacement->AddRef(), _depthstencil_replacement->Release()) > 1)
+				{
+					_depthstencil_replacement->Release();
+				}
+			}
+			if (_depthstencil_texture != nullptr)
+			{
+				while ((_depthstencil_texture->AddRef(), _depthstencil_texture->Release()) > 1)
+				{
+					_depthstencil_texture->Release();
+				}
+			}
+		}
+		
+		_depthstencil.reset();		
+		_depthstencil_replacement.reset();		
 		_depthstencil_texture.reset();
 
+		_default_depthstencil->Release();
 		_default_depthstencil.reset();
 
 		_effect_triangle_buffer.reset();

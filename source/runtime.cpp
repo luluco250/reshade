@@ -137,9 +137,6 @@ namespace reshade
 
 		_width = _height = 0;
 		_is_initialized = false;
-		is_d3d9 = false;
-		is_d3d10 = false;
-		is_d3d11 = false;
 	}
 	void runtime::on_reset_effect()
 	{

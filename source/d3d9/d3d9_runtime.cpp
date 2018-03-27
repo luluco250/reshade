@@ -220,6 +220,13 @@ namespace reshade::d3d9
 
 		if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
 		{
+			if (best_match != nullptr)
+			{
+				while ((best_match->AddRef(), best_match->Release()) > 1)
+				{
+					best_match->Release();
+				}
+			}
 			if (_depthstencil != nullptr)
 			{
 				while ((_depthstencil->AddRef(), _depthstencil->Release()) > 1)
@@ -242,7 +249,8 @@ namespace reshade::d3d9
 				}
 			}
 		}
-		
+
+		best_match.reset();
 		_depthstencil.reset();		
 		_depthstencil_replacement.reset();		
 		_depthstencil_texture.reset();

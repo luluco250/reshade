@@ -218,39 +218,7 @@ namespace reshade::d3d9
 		_backbuffer_texture.reset();
 		_backbuffer_texture_surface.reset();
 
-		if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
-		{
-			if (best_match != nullptr)
-			{
-				while ((best_match->AddRef(), best_match->Release()) > 1)
-				{
-					best_match->Release();
-				}
-			}
-			if (_depthstencil != nullptr)
-			{
-				while ((_depthstencil->AddRef(), _depthstencil->Release()) > 1)
-				{
-					_depthstencil->Release();
-				}
-			}
-			if (_depthstencil_replacement != nullptr)
-			{
-				while ((_depthstencil_replacement->AddRef(), _depthstencil_replacement->Release()) > 1)
-				{
-					_depthstencil_replacement->Release();
-				}
-			}
-			if (_depthstencil_texture != nullptr)
-			{
-				while ((_depthstencil_texture->AddRef(), _depthstencil_texture->Release()) > 1)
-				{
-					_depthstencil_texture->Release();
-				}
-			}
-		}
-
-		best_match.reset();
+		_best_depthstencil.reset();
 		_depthstencil.reset();		
 		_depthstencil_replacement.reset();		
 		_depthstencil_texture.reset();
@@ -907,7 +875,7 @@ namespace reshade::d3d9
 		}
 
 		depth_source_info best_info = { 0 };
-		best_match = nullptr;
+		_best_depthstencil = nullptr;
 
 		for (auto it = _depth_source_table.begin(); it != _depth_source_table.end();)
 		{
@@ -935,24 +903,24 @@ namespace reshade::d3d9
 			{
 				if ((depthstencil_info.vertices_count * (1.2f - float(depthstencil_info.drawcall_count) / _drawcalls)) >= (best_info.vertices_count * (1.2f - float(best_info.drawcall_count) / _drawcalls)))
 				{
-					best_match = depthstencil;
+					_best_depthstencil = depthstencil;
 					best_info = depthstencil_info;
 				}
 			}
 			else if (depthstencil_info.vertices_count >= best_info.vertices_count)
 			{
-				best_match = depthstencil;
+				_best_depthstencil = depthstencil;
 				best_info = depthstencil_info;
 			}
 
 			depthstencil_info.drawcall_count = depthstencil_info.vertices_count = 0;
 		}
 
-		if (best_match != nullptr)
+		if (_best_depthstencil != nullptr)
 		{
-			if (on_clear == true || _depthstencil != best_match)
+			if (on_clear == true || _depthstencil != _best_depthstencil)
 			{
-				create_depthstencil_replacement(best_match.get(), on_clear);
+				create_depthstencil_replacement(_best_depthstencil.get(), on_clear);
 			}
 		}
 	}

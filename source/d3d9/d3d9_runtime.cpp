@@ -386,12 +386,12 @@ namespace reshade::d3d9
 			depthstencil->GetDesc(&desc);
 
 			// Early rejection
-			if ( desc.MultiSampleType != D3DMULTISAMPLE_NONE ||
+			/*if (desc.MultiSampleType != D3DMULTISAMPLE_NONE ||
 				(desc.Width < _width * 0.95 || desc.Width > _width * 1.05) ||
 				(desc.Height < _height * 0.95 || desc.Height > _height * 1.05))
 			{
 				return;
-			}
+			}*/
 
 			depthstencil->AddRef();
 

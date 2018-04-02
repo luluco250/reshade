@@ -1799,7 +1799,7 @@ namespace reshade
 				save_configuration();
 			}
 
-			if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage && is_d3d11 == true)
+			if ((is_d3d11 || is_d3d9) && depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
 			{
 				int depth_buffer_clearing_number_index = depth_buffer_clearing_number;
 

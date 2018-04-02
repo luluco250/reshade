@@ -210,6 +210,8 @@ namespace reshade::d3d9
 
 		runtime::on_reset();
 
+		_clear_DSV_iter = 1;
+
 		// Destroy resources
 		_stateblock.reset();
 
@@ -330,12 +332,27 @@ namespace reshade::d3d9
 		// End post processing
 		_device->EndScene();
 	}
-	void d3d9_runtime::on_clear()
+	void d3d9_runtime::on_clear(DWORD Flags)
 	{
 		if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
 		{
-			detect_depth_source(true);
+			if (depth_buffer_clearing_number > 0)
+			{
+				if (_clear_DSV_iter == depth_buffer_clearing_number)
+				{
+					detect_depth_source(true);
+				}
+			}
+			else
+			{
+				if (Flags == 6)
+				{
+					detect_depth_source(true);
+				}
+			}
 		}
+
+		_clear_DSV_iter++;
 	}
 	void d3d9_runtime::on_draw_call(D3DPRIMITIVETYPE type, UINT vertices)
 	{
@@ -386,12 +403,12 @@ namespace reshade::d3d9
 			depthstencil->GetDesc(&desc);
 
 			// Early rejection
-			/*if (desc.MultiSampleType != D3DMULTISAMPLE_NONE ||
+			if (desc.MultiSampleType != D3DMULTISAMPLE_NONE ||
 				(desc.Width < _width * 0.95 || desc.Width > _width * 1.05) ||
 				(desc.Height < _height * 0.95 || desc.Height > _height * 1.05))
 			{
 				return;
-			}*/
+			}
 
 			depthstencil->AddRef();
 

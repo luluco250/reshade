@@ -451,10 +451,7 @@ HRESULT STDMETHODCALLTYPE Direct3DDevice9::EndScene()
 }
 HRESULT STDMETHODCALLTYPE Direct3DDevice9::Clear(DWORD Count, const D3DRECT *pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil)
 {
-	if (Flags == 5)
-	{
-		_implicit_swapchain->_runtime->on_clear();
-	}
+	_implicit_swapchain->_runtime->on_clear(Flags);
 
 	return _orig->Clear(Count, pRects, Flags, Color, Z, Stencil);
 }

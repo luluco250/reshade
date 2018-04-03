@@ -36,6 +36,13 @@ namespace reshade
 	}
 	std::shared_ptr<input> input::register_window(window_handle window)
 	{
+		const HWND parent = GetParent(static_cast<HWND>(window));
+
+		if (parent != nullptr)
+		{
+			window = parent;
+		}
+
 		const std::lock_guard<std::mutex> lock(s_mutex);
 
 		const auto insert = s_windows.emplace(static_cast<HWND>(window), std::weak_ptr<input>());
@@ -76,6 +83,14 @@ namespace reshade
 			return false;
 		}
 
+		// Some games process input on a child window of the swapchain window so make sure input is handled on the parent window
+		const HWND parent = GetParent(details.hwnd);
+
+		if (parent != nullptr)
+		{
+			details.hwnd = parent;
+		}
+
 		const std::lock_guard<std::mutex> lock(s_mutex);
 
 		// Remove any expired entry from the list
@@ -85,13 +100,6 @@ namespace reshade
 		// Look up the window in the list of known input windows
 		auto input_window = s_windows.find(details.hwnd);
 		const auto raw_input_window = s_raw_input_windows.find(details.hwnd);
-
-		// Walk through the window chain and until an known window is found
-		EnumChildWindows(details.hwnd, [](HWND hwnd, LPARAM lparam) -> BOOL {
-			auto &input_window = *reinterpret_cast<decltype(s_windows)::iterator *>(lparam);
-			// Return true to continue enumeration
-			return (input_window = s_windows.find(hwnd)) == s_windows.end();
-		}, reinterpret_cast<LPARAM>(&input_window));
 
 		if (input_window == s_windows.end() && raw_input_window != s_raw_input_windows.end())
 		{

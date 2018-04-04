@@ -25,6 +25,8 @@ namespace reshade
 	filesystem::path runtime::s_reshade_dll_path, runtime::s_target_executable_path;
 	unsigned int runtime::depth_buffer_retrieval_mode = depth_buffer_retrieval_mode::post_process; // "Post process" retrieval mode by default (the former retrieval mode of Reshade)
 	unsigned int runtime::depth_buffer_clearing_number = 0; // usually, the second depth buffer clearing is the good one
+	unsigned int runtime::depth_buffer_clearing_flag_number = 0; // usually, a flag of 6 matches the correct depth buffer (in d3d9)
+	bool runtime::restrict_depth_buffer_dimensions = true; // filter the depth buffer dimensions in d3d9 by default
 
 	runtime::runtime(uint32_t renderer) :
 		_renderer_id(renderer),
@@ -741,7 +743,9 @@ namespace reshade
 
 		config.get("DEPTH_BUFFER_DETECTION", "DepthBufferRetrievalMode", depth_buffer_retrieval_mode);
 		config.get("DEPTH_BUFFER_DETECTION", "DepthBufferClearingNumber", depth_buffer_clearing_number);
+		config.get("DEPTH_BUFFER_DETECTION", "DepthBufferClearingFlagNumber", depth_buffer_clearing_flag_number);
 		config.get("DEPTH_BUFFER_DETECTION", "DepthBufferTextureFormat", _depth_buffer_texture_format);
+		config.get("DEPTH_BUFFER_DETECTION", "RestrictDepthBufferDimensions", restrict_depth_buffer_dimensions);
 
 		config.get("STYLE", "Alpha", _imgui_context->Style.Alpha);
 		config.get("STYLE", "ColBackground", _imgui_col_background);
@@ -849,7 +853,9 @@ namespace reshade
 
 		config.set("DEPTH_BUFFER_DETECTION", "DepthBufferRetrievalMode", depth_buffer_retrieval_mode);
 		config.set("DEPTH_BUFFER_DETECTION", "DepthBufferClearingNumber", depth_buffer_clearing_number);
+		config.set("DEPTH_BUFFER_DETECTION", "DepthBufferClearingFlagNumber", depth_buffer_clearing_flag_number);
 		config.set("DEPTH_BUFFER_DETECTION", "DepthBufferTextureFormat", _depth_buffer_texture_format);
+		config.set("DEPTH_BUFFER_DETECTION", "RestrictDepthBufferDimensions", restrict_depth_buffer_dimensions);
 
 		config.set("STYLE", "Alpha", _imgui_context->Style.Alpha);
 		config.set("STYLE", "ColBackground", _imgui_col_background);
@@ -1812,12 +1818,32 @@ namespace reshade
 				}
 			}
 
-			if (is_d3d11 == true)
+			if (is_d3d11)
 			{
 				if (ImGui::Combo("Depth texture format", &_depth_buffer_texture_format, "DXGI_FORMAT_UNKNOWN\0DXGI_FORMAT_R16_TYPELESS\0DXGI_FORMAT_R32_TYPELESS\0DXGI_FORMAT_R24G8_TYPELESS\0DXGI_FORMAT_R32G8X24_TYPELESS\0"))
 				{
 					_depth_buffer_settings_changed = true;
 
+					save_configuration();
+				}
+			}
+
+			if (is_d3d9)
+			{
+				int depth_buffer_clearing_flag_number_index = (depth_buffer_clearing_flag_number == 6) ? 0 : depth_buffer_clearing_flag_number;
+
+				if (ImGui::Combo("Depth buffer clearing flag number", &depth_buffer_clearing_flag_number_index, "Default\0First\0Second\0Third\0Fourth\0Fifth\0Sixth\0Seventh\0Eighth\0Ninth\0"))
+				{
+					_depth_buffer_settings_changed = true;
+					depth_buffer_clearing_flag_number = (depth_buffer_clearing_flag_number_index > 0) ? depth_buffer_clearing_flag_number_index : 6;
+
+					save_configuration();
+				}
+
+				_depth_buffer_settings_changed |= ImGui::Checkbox("Restrict depth buffer dimensions to viewport", &restrict_depth_buffer_dimensions);
+
+				if (_depth_buffer_settings_changed == true)
+				{
 					save_configuration();
 				}
 			}

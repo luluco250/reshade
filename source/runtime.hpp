@@ -54,6 +54,14 @@ namespace reshade
 		/// Depth buffer clearing number
 		/// </summary>
 		static unsigned int depth_buffer_clearing_number;
+		/// <summary>
+		/// Depth buffer clearing flag number
+		/// </summary>
+		static unsigned int depth_buffer_clearing_flag_number;
+		/// <summary>
+		/// Depth buffer dimensions restriction
+		/// </summary>
+		static bool restrict_depth_buffer_dimensions;
 
 		/// <summary>
 		/// Construct a new runtime instance.

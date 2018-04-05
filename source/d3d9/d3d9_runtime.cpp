@@ -416,18 +416,18 @@ namespace reshade::d3d9
 	{
 		switch (type)
 		{
-		        case D3DPT_LINELIST:
-			        vertices *= 2;
-			        break;
-		        case D3DPT_LINESTRIP:
-			        vertices += 1;
-			        break;
-		        case D3DPT_TRIANGLELIST:
-			        vertices *= 3;
-			        break;
-		        case D3DPT_TRIANGLESTRIP:
-		        case D3DPT_TRIANGLEFAN:
-			        vertices += 2;
+			case D3DPT_LINELIST:
+				vertices *= 2;
+				break;
+			case D3DPT_LINESTRIP:
+				vertices += 1;
+				break;
+			case D3DPT_TRIANGLELIST:
+				vertices *= 3;
+				break;
+			case D3DPT_TRIANGLESTRIP:
+			case D3DPT_TRIANGLEFAN:
+				vertices += 2;
           			break;
 		}
 

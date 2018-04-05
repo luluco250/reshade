@@ -580,16 +580,16 @@ namespace reshade
 
 				switch (initializer->type.basetype)
 				{
-				case reshadefx::nodes::type_node::datatype_int:
-					preset.get(path.filename().string(), variable->name, initializer->value_int);
-					break;
-				case reshadefx::nodes::type_node::datatype_bool:
-				case reshadefx::nodes::type_node::datatype_uint:
-					preset.get(path.filename().string(), variable->name, initializer->value_uint);
-					break;
-				case reshadefx::nodes::type_node::datatype_float:
-					preset.get(path.filename().string(), variable->name, initializer->value_float);
-					break;
+					case reshadefx::nodes::type_node::datatype_int:
+						preset.get(path.filename().string(), variable->name, initializer->value_int);
+						break;
+					case reshadefx::nodes::type_node::datatype_bool:
+					case reshadefx::nodes::type_node::datatype_uint:
+						preset.get(path.filename().string(), variable->name, initializer->value_uint);
+						break;
+					case reshadefx::nodes::type_node::datatype_float:
+						preset.get(path.filename().string(), variable->name, initializer->value_float);
+						break;
 				}
 
 				variable->type.qualifiers ^= reshadefx::nodes::type_node::qualifier_uniform;
@@ -877,22 +877,22 @@ namespace reshade
 
 			switch (variable.basetype)
 			{
-			case uniform_datatype::signed_integer:
-				get_uniform_value(variable, values_int, 16);
-				preset.get(variable.effect_filename, variable.name, values_int);
-				set_uniform_value(variable, values_int, 16);
-				break;
-			case uniform_datatype::boolean:
-			case uniform_datatype::unsigned_integer:
-				get_uniform_value(variable, values_uint, 16);
-				preset.get(variable.effect_filename, variable.name, values_uint);
-				set_uniform_value(variable, values_uint, 16);
-				break;
-			case uniform_datatype::floating_point:
-				get_uniform_value(variable, values_float, 16);
-				preset.get(variable.effect_filename, variable.name, values_float);
-				set_uniform_value(variable, values_float, 16);
-				break;
+				case uniform_datatype::signed_integer:
+					get_uniform_value(variable, values_int, 16);
+					preset.get(variable.effect_filename, variable.name, values_int);
+					set_uniform_value(variable, values_int, 16);
+					break;
+				case uniform_datatype::boolean:
+				case uniform_datatype::unsigned_integer:
+					get_uniform_value(variable, values_uint, 16);
+					preset.get(variable.effect_filename, variable.name, values_uint);
+					set_uniform_value(variable, values_uint, 16);
+					break;
+				case uniform_datatype::floating_point:
+					get_uniform_value(variable, values_float, 16);
+					preset.get(variable.effect_filename, variable.name, values_float);
+					set_uniform_value(variable, values_float, 16);
+					break;
 			}
 		}
 
@@ -954,19 +954,19 @@ namespace reshade
 
 			switch (variable.basetype)
 			{
-			case uniform_datatype::signed_integer:
-				get_uniform_value(variable, values_int, 16);
-				preset.set(variable.effect_filename, variable.name, variant(values_int, variable.rows * variable.columns));
-				break;
-			case uniform_datatype::boolean:
-			case uniform_datatype::unsigned_integer:
-				get_uniform_value(variable, values_uint, 16);
-				preset.set(variable.effect_filename, variable.name, variant(values_uint, variable.rows * variable.columns));
-				break;
-			case uniform_datatype::floating_point:
-				get_uniform_value(variable, values_float, 16);
-				preset.set(variable.effect_filename, variable.name, variant(values_float, variable.rows * variable.columns));
-				break;
+				case uniform_datatype::signed_integer:
+					get_uniform_value(variable, values_int, 16);
+					preset.set(variable.effect_filename, variable.name, variant(values_int, variable.rows * variable.columns));
+					break;
+				case uniform_datatype::boolean:
+				case uniform_datatype::unsigned_integer:
+					get_uniform_value(variable, values_uint, 16);
+					preset.set(variable.effect_filename, variable.name, variant(values_uint, variable.rows * variable.columns));
+					break;
+				case uniform_datatype::floating_point:
+					get_uniform_value(variable, values_float, 16);
+					preset.set(variable.effect_filename, variable.name, variant(values_float, variable.rows * variable.columns));
+					break;
 			}
 		}
 
@@ -1828,7 +1828,7 @@ namespace reshade
 				}
 			}
 
-			if (is_d3d9)
+			if (is_d3d9 && depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
 			{
 				int depth_buffer_clearing_flag_number_index = (depth_buffer_clearing_flag_number == 6) ? 0 : depth_buffer_clearing_flag_number;
 
@@ -1839,7 +1839,10 @@ namespace reshade
 
 					save_configuration();
 				}
+			}
 
+			if (is_d3d9)
+			{
 				_depth_buffer_settings_changed |= ImGui::Checkbox("Restrict depth buffer dimensions to viewport", &restrict_depth_buffer_dimensions);
 
 				if (_depth_buffer_settings_changed == true)

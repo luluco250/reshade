@@ -950,8 +950,8 @@ namespace reshade::d3d9
 			if (_depth_buffer_settings_changed == true)
 			{
 				create_depthstencil_replacement(nullptr, on_clear);
-				_best_depthstencil = nullptr;
-				_depthstencil_replacement = nullptr;
+				_best_depthstencil.reset();
+				_depthstencil_replacement.reset();
 				_depth_source_table.clear();
 				_depth_buffer_settings_changed = false;
 				return;

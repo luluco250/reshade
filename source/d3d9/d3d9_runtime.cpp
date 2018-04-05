@@ -428,7 +428,7 @@ namespace reshade::d3d9
 			case D3DPT_TRIANGLESTRIP:
 			case D3DPT_TRIANGLEFAN:
 				vertices += 2;
-          			break;
+          		break;
 		}
 
 		_vertices += vertices;

@@ -92,5 +92,6 @@ namespace reshade::d3d9
 		com_ptr<IDirect3DIndexBuffer9> _imgui_index_buffer;
 		int _imgui_vertex_buffer_size = 0, _imgui_index_buffer_size = 0;
 		unsigned int _clear_DSV_iter = 1;
+		bool _depth_buffer_retrieved_at_clearing_stage = false;
 	};
 }

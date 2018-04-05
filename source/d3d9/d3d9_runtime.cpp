@@ -312,6 +312,7 @@ namespace reshade::d3d9
 		detect_depth_source((depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage));
 
 		_clear_DSV_iter = 1;
+		_depth_buffer_retrieved_at_clearing_stage = false;
 
 		// Begin post processing
 		if (FAILED(_device->BeginScene()))
@@ -399,6 +400,7 @@ namespace reshade::d3d9
 				if (_clear_DSV_iter == depth_buffer_clearing_number)
 				{
 					detect_depth_source(true);
+					_depth_buffer_retrieved_at_clearing_stage = true;
 				}
 			}
 			else
@@ -406,6 +408,7 @@ namespace reshade::d3d9
 				if (depth_buffer_clearing_flag_number  == 0 || Flags == depth_buffer_clearing_flag_number)
 				{
 					detect_depth_source(true);
+					_depth_buffer_retrieved_at_clearing_stage = true;
 				}
 			}
 		}
@@ -947,7 +950,7 @@ namespace reshade::d3d9
 			}
 
 			// refresh depth buffer after detection settings has changed
-			if (_depth_buffer_settings_changed == true)
+			if (_depth_buffer_settings_changed == true || (on_clear == true && _depth_buffer_retrieved_at_clearing_stage == false))
 			{
 				create_depthstencil_replacement(nullptr, on_clear);
 				_best_depthstencil.reset();

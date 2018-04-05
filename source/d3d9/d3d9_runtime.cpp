@@ -403,7 +403,7 @@ namespace reshade::d3d9
 			}
 			else
 			{
-				if (Flags == depth_buffer_clearing_flag_number)
+				if (depth_buffer_clearing_flag_number  == 0 || Flags == depth_buffer_clearing_flag_number)
 				{
 					detect_depth_source(true);
 				}

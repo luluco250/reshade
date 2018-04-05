@@ -1830,12 +1830,12 @@ namespace reshade
 
 			if (is_d3d9 && depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
 			{
-				int depth_buffer_clearing_flag_number_index = (depth_buffer_clearing_flag_number == 6) ? 0 : depth_buffer_clearing_flag_number;
+				int depth_buffer_clearing_flag_number_index = depth_buffer_clearing_flag_number;
 
-				if (ImGui::Combo("Depth buffer clearing flag number", &depth_buffer_clearing_flag_number_index, "Default\0First\0Second\0Third\0Fourth\0Fifth\0Sixth\0Seventh\0Eighth\0Ninth\0"))
+				if (ImGui::Combo("Depth buffer clearing flag number", &depth_buffer_clearing_flag_number_index, "None\0 1\0 2\0 3\0 4\0 5\0 6\0 7\0 8\0 9\0"))
 				{
 					_depth_buffer_settings_changed = true;
-					depth_buffer_clearing_flag_number = (depth_buffer_clearing_flag_number_index > 0) ? depth_buffer_clearing_flag_number_index : 6;
+					depth_buffer_clearing_flag_number = depth_buffer_clearing_flag_number_index;
 
 					save_configuration();
 				}

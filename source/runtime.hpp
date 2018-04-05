@@ -218,7 +218,6 @@ namespace reshade
 
 	private:
 		static bool check_for_update(unsigned long latest_version[3]);
-		bool _isd3d11();
 
 		void reload();
 		void load_configuration();

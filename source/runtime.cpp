@@ -25,7 +25,7 @@ namespace reshade
 	filesystem::path runtime::s_reshade_dll_path, runtime::s_target_executable_path;
 	unsigned int runtime::depth_buffer_retrieval_mode = depth_buffer_retrieval_mode::post_process; // "Post process" retrieval mode by default (the former retrieval mode of Reshade)
 	unsigned int runtime::depth_buffer_clearing_number = 0; // usually, the second depth buffer clearing is the good one
-	unsigned int runtime::depth_buffer_clearing_flag_number = 0; // usually, a flag of 6 matches the correct depth buffer (in d3d9)
+	unsigned int runtime::depth_buffer_clearing_flag_number = 6; // usually, a flag of 6 matches the correct depth buffer (in d3d9)
 	bool runtime::restrict_depth_buffer_dimensions = true; // filter the depth buffer dimensions in d3d9 by default
 
 	runtime::runtime(uint32_t renderer) :

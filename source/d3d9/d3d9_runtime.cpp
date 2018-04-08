@@ -309,7 +309,25 @@ namespace reshade::d3d9
 			return;
 		}
 
-		detect_depth_source((depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage));
+		// refresh depth buffer after detection settings has changed
+		if (_depth_buffer_settings_changed == true)
+		{
+			create_depthstencil_replacement(nullptr, true);
+			_depth_buffer_settings_changed = false;
+		}
+		else
+		{
+			detect_depth_source((depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage));
+		}
+		
+		// fix for cinematics
+		if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
+		{
+			if (_depth_buffer_retrieved_at_clearing_stage == false)
+			{
+				create_depthstencil_replacement(nullptr, true);
+			}
+		}
 
 		_clear_DSV_iter = 1;
 		_depth_buffer_retrieved_at_clearing_stage = false;
@@ -919,33 +937,13 @@ namespace reshade::d3d9
 			}
 		}
 
-		if (on_clear == true && _depth_buffer_retrieved_at_clearing_stage == false)
-		{
-			create_depthstencil_replacement(nullptr, on_clear);
-			return;
-		}
-
-		// refresh depth buffer after detection settings has changed
-		if (_depth_buffer_settings_changed == true)
-		{
-			_best_depthstencil.reset();
-			// Clear depth source table
-			for (auto &it : _depth_source_table)
-			{
-				it.first->Release();
-			}
-			_depth_source_table.clear();
-			_depth_buffer_settings_changed = false;
-			return;
-		}
-
 		if (_is_multisampling_enabled || _depth_source_table.empty())
 		{
 			return;
 		}
 
 		depth_source_info best_info = { 0 };
-		_best_depthstencil = nullptr;
+		_best_depthstencil.reset();
 
 		for (auto it = _depth_source_table.begin(); it != _depth_source_table.end();)
 		{
@@ -1007,7 +1005,7 @@ namespace reshade::d3d9
 			D3DSURFACE_DESC desc;
 			_depthstencil->GetDesc(&desc);
 
-			if (desc.Format != D3DFMT_INTZ && desc.Format != D3DFMT_DF16 && desc.Format != D3DFMT_DF24)
+			if (on_clear == true || (desc.Format != D3DFMT_INTZ && desc.Format != D3DFMT_DF16 && desc.Format != D3DFMT_DF24))
 			{
 				D3DDISPLAYMODE displaymode;
 				_swapchain->GetDisplayMode(&displaymode);

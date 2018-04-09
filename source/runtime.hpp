@@ -54,6 +54,14 @@ namespace reshade
 		/// Depth buffer clearing number
 		/// </summary>
 		static unsigned int depth_buffer_clearing_number;
+		/// <summary>
+		/// Depth buffer clearing flag number
+		/// </summary>
+		static unsigned int depth_buffer_clearing_flag_number;
+		/// <summary>
+		/// Depth buffer dimensions restriction
+		/// </summary>
+		static bool restrict_depth_buffer_dimensions;
 
 		/// <summary>
 		/// Construct a new runtime instance.
@@ -155,6 +163,9 @@ namespace reshade
 		/// Callback function called to apply the post-processing effects to the screen.
 		/// </summary>
 		void on_present_effect();
+		bool is_d3d9 = false;
+		bool is_d3d10 = false;
+		bool is_d3d11 = false;
 
 		/// <summary>
 		/// Compile effect from the specified source file and initialize textures, constants and techniques.

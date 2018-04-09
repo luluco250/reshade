@@ -25,6 +25,8 @@ namespace reshade
 	filesystem::path runtime::s_reshade_dll_path, runtime::s_target_executable_path;
 	unsigned int runtime::depth_buffer_retrieval_mode = depth_buffer_retrieval_mode::post_process; // "Post process" retrieval mode by default (the former retrieval mode of Reshade)
 	unsigned int runtime::depth_buffer_clearing_number = 0; // usually, the second depth buffer clearing is the good one
+	unsigned int runtime::depth_buffer_clearing_flag_number = 6; // usually, a flag of 6 matches the correct depth buffer (in d3d9)
+	bool runtime::restrict_depth_buffer_dimensions = true; // filter the depth buffer dimensions in d3d9 by default
 
 	runtime::runtime(uint32_t renderer) :
 		_renderer_id(renderer),
@@ -584,16 +586,16 @@ namespace reshade
 
 				switch (initializer->type.basetype)
 				{
-				case reshadefx::nodes::type_node::datatype_int:
-					preset.get(path.filename().string(), variable->name, initializer->value_int);
-					break;
-				case reshadefx::nodes::type_node::datatype_bool:
-				case reshadefx::nodes::type_node::datatype_uint:
-					preset.get(path.filename().string(), variable->name, initializer->value_uint);
-					break;
-				case reshadefx::nodes::type_node::datatype_float:
-					preset.get(path.filename().string(), variable->name, initializer->value_float);
-					break;
+					case reshadefx::nodes::type_node::datatype_int:
+						preset.get(path.filename().string(), variable->name, initializer->value_int);
+						break;
+					case reshadefx::nodes::type_node::datatype_bool:
+					case reshadefx::nodes::type_node::datatype_uint:
+						preset.get(path.filename().string(), variable->name, initializer->value_uint);
+						break;
+					case reshadefx::nodes::type_node::datatype_float:
+						preset.get(path.filename().string(), variable->name, initializer->value_float);
+						break;
 				}
 
 				variable->type.qualifiers ^= reshadefx::nodes::type_node::qualifier_uniform;
@@ -747,7 +749,9 @@ namespace reshade
 
 		config.get("DEPTH_BUFFER_DETECTION", "DepthBufferRetrievalMode", depth_buffer_retrieval_mode);
 		config.get("DEPTH_BUFFER_DETECTION", "DepthBufferClearingNumber", depth_buffer_clearing_number);
+		config.get("DEPTH_BUFFER_DETECTION", "DepthBufferClearingFlagNumber", depth_buffer_clearing_flag_number);
 		config.get("DEPTH_BUFFER_DETECTION", "DepthBufferTextureFormat", _depth_buffer_texture_format);
+		config.get("DEPTH_BUFFER_DETECTION", "RestrictDepthBufferDimensions", restrict_depth_buffer_dimensions);
 
 		config.get("STYLE", "Alpha", _imgui_context->Style.Alpha);
 		config.get("STYLE", "ColBackground", _imgui_col_background);
@@ -855,7 +859,9 @@ namespace reshade
 
 		config.set("DEPTH_BUFFER_DETECTION", "DepthBufferRetrievalMode", depth_buffer_retrieval_mode);
 		config.set("DEPTH_BUFFER_DETECTION", "DepthBufferClearingNumber", depth_buffer_clearing_number);
+		config.set("DEPTH_BUFFER_DETECTION", "DepthBufferClearingFlagNumber", depth_buffer_clearing_flag_number);
 		config.set("DEPTH_BUFFER_DETECTION", "DepthBufferTextureFormat", _depth_buffer_texture_format);
+		config.set("DEPTH_BUFFER_DETECTION", "RestrictDepthBufferDimensions", restrict_depth_buffer_dimensions);
 
 		config.set("STYLE", "Alpha", _imgui_context->Style.Alpha);
 		config.set("STYLE", "ColBackground", _imgui_col_background);
@@ -877,22 +883,22 @@ namespace reshade
 
 			switch (variable.basetype)
 			{
-			case uniform_datatype::signed_integer:
-				get_uniform_value(variable, values_int, 16);
-				preset.get(variable.effect_filename, variable.name, values_int);
-				set_uniform_value(variable, values_int, 16);
-				break;
-			case uniform_datatype::boolean:
-			case uniform_datatype::unsigned_integer:
-				get_uniform_value(variable, values_uint, 16);
-				preset.get(variable.effect_filename, variable.name, values_uint);
-				set_uniform_value(variable, values_uint, 16);
-				break;
-			case uniform_datatype::floating_point:
-				get_uniform_value(variable, values_float, 16);
-				preset.get(variable.effect_filename, variable.name, values_float);
-				set_uniform_value(variable, values_float, 16);
-				break;
+				case uniform_datatype::signed_integer:
+					get_uniform_value(variable, values_int, 16);
+					preset.get(variable.effect_filename, variable.name, values_int);
+					set_uniform_value(variable, values_int, 16);
+					break;
+				case uniform_datatype::boolean:
+				case uniform_datatype::unsigned_integer:
+					get_uniform_value(variable, values_uint, 16);
+					preset.get(variable.effect_filename, variable.name, values_uint);
+					set_uniform_value(variable, values_uint, 16);
+					break;
+				case uniform_datatype::floating_point:
+					get_uniform_value(variable, values_float, 16);
+					preset.get(variable.effect_filename, variable.name, values_float);
+					set_uniform_value(variable, values_float, 16);
+					break;
 			}
 		}
 
@@ -954,19 +960,19 @@ namespace reshade
 
 			switch (variable.basetype)
 			{
-			case uniform_datatype::signed_integer:
-				get_uniform_value(variable, values_int, 16);
-				preset.set(variable.effect_filename, variable.name, variant(values_int, variable.rows * variable.columns));
-				break;
-			case uniform_datatype::boolean:
-			case uniform_datatype::unsigned_integer:
-				get_uniform_value(variable, values_uint, 16);
-				preset.set(variable.effect_filename, variable.name, variant(values_uint, variable.rows * variable.columns));
-				break;
-			case uniform_datatype::floating_point:
-				get_uniform_value(variable, values_float, 16);
-				preset.set(variable.effect_filename, variable.name, variant(values_float, variable.rows * variable.columns));
-				break;
+				case uniform_datatype::signed_integer:
+					get_uniform_value(variable, values_int, 16);
+					preset.set(variable.effect_filename, variable.name, variant(values_int, variable.rows * variable.columns));
+					break;
+				case uniform_datatype::boolean:
+				case uniform_datatype::unsigned_integer:
+					get_uniform_value(variable, values_uint, 16);
+					preset.set(variable.effect_filename, variable.name, variant(values_uint, variable.rows * variable.columns));
+					break;
+				case uniform_datatype::floating_point:
+					get_uniform_value(variable, values_float, 16);
+					preset.set(variable.effect_filename, variable.name, variant(values_float, variable.rows * variable.columns));
+					break;
 			}
 		}
 
@@ -1239,7 +1245,7 @@ namespace reshade
 				}
 
 				ImGui::SetNextWindowPos(ImVec2(_width * 0.5f, _height * 0.5f), ImGuiCond_Once, ImVec2(0.5f, 0.5f));
-				ImGui::SetNextWindowSize(ImVec2(710, 650), ImGuiCond_Once);
+				ImGui::SetNextWindowSize(ImVec2(710, 850), ImGuiCond_Once);
 				ImGui::Begin("ReShade " VERSION_STRING_FILE " by crosire###Main", &_show_menu,
 					ImGuiWindowFlags_MenuBar |
 					ImGuiWindowFlags_NoCollapse);
@@ -1791,15 +1797,13 @@ namespace reshade
 			}
 		}
 
-		const bool is_d3d11 = (_renderer_id & 0xb000) != 0;
-
-		if (is_d3d11 && ImGui::CollapsingHeader("Buffer Detection", ImGuiTreeNodeFlags_DefaultOpen))
+		if ((is_d3d11 || is_d3d9) && ImGui::CollapsingHeader("Buffer Detection", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			assert(_menu_key_data[0] < 256);
 
 			int depth_buffer_retrieval_mode_index = depth_buffer_retrieval_mode;
 
-			if (ImGui::Combo("Depth detection retrieval mode", &depth_buffer_retrieval_mode_index, "Post Process\0Before Clearing\0At Output Merger Stage\0"))
+			if (ImGui::Combo("Depth detection retrieval mode", &depth_buffer_retrieval_mode_index, (is_d3d11 == true) ? "Post Process\0Before Clearing\0At Output Merger Stage\0" : "Post Process\0Before Clearing\0"))
 			{
 				_depth_buffer_settings_changed = true;
 				depth_buffer_retrieval_mode = depth_buffer_retrieval_mode_index;
@@ -1807,7 +1811,7 @@ namespace reshade
 				save_configuration();
 			}
 
-			if (depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
+			if ((is_d3d11 || is_d3d9) && depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
 			{
 				int depth_buffer_clearing_number_index = depth_buffer_clearing_number;
 
@@ -1820,11 +1824,37 @@ namespace reshade
 				}
 			}
 
-			if (ImGui::Combo("Depth texture format", &_depth_buffer_texture_format, "DXGI_FORMAT_UNKNOWN\0DXGI_FORMAT_R16_TYPELESS\0DXGI_FORMAT_R32_TYPELESS\0DXGI_FORMAT_R24G8_TYPELESS\0DXGI_FORMAT_R32G8X24_TYPELESS\0"))
+			if (is_d3d11)
 			{
-				_depth_buffer_settings_changed = true;
+				if (ImGui::Combo("Depth texture format", &_depth_buffer_texture_format, "DXGI_FORMAT_UNKNOWN\0DXGI_FORMAT_R16_TYPELESS\0DXGI_FORMAT_R32_TYPELESS\0DXGI_FORMAT_R24G8_TYPELESS\0DXGI_FORMAT_R32G8X24_TYPELESS\0"))
+				{
+					_depth_buffer_settings_changed = true;
 
-				save_configuration();
+					save_configuration();
+				}
+			}
+
+			if (is_d3d9 && depth_buffer_retrieval_mode == depth_buffer_retrieval_mode::before_clearing_stage)
+			{
+				int depth_buffer_clearing_flag_number_index = depth_buffer_clearing_flag_number;
+
+				if (ImGui::Combo("Depth buffer clearing flag number", &depth_buffer_clearing_flag_number_index, "None\0 1\0 2\0 3\0 4\0 5\0 6\0 7\0 8\0 9\0"))
+				{
+					_depth_buffer_settings_changed = true;
+					depth_buffer_clearing_flag_number = depth_buffer_clearing_flag_number_index;
+
+					save_configuration();
+				}
+			}
+
+			if (is_d3d9)
+			{
+				_depth_buffer_settings_changed |= ImGui::Checkbox("Restrict depth buffer dimensions to viewport", &restrict_depth_buffer_dimensions);
+
+				if (_depth_buffer_settings_changed == true)
+				{
+					save_configuration();
+				}
 			}
 		}
 

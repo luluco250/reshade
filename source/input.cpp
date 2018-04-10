@@ -159,6 +159,9 @@ namespace reshade
 
 						if (raw_data.data.mouse.usButtonFlags & RI_MOUSE_WHEEL)
 							input._mouse_wheel_delta += static_cast<short>(raw_data.data.mouse.usButtonData) / WHEEL_DELTA;
+
+						input._mouse_raw_delta[0] = static_cast<short>(raw_data.data.mouse.lLastX);
+						input._mouse_raw_delta[1] = static_cast<short>(raw_data.data.mouse.lLastY);
 						break;
 					case RIM_TYPEKEYBOARD:
 						is_keyboard_message = true;
@@ -389,6 +392,8 @@ namespace reshade
 		}
 
 		_mouse_wheel_delta = 0;
+		_mouse_raw_delta[0] = 0;
+		_mouse_raw_delta[1] = 0;
 		_last_mouse_position[0] = _mouse_position[0];
 		_last_mouse_position[1] = _mouse_position[1];
 

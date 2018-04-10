@@ -364,9 +364,9 @@ namespace reshade
 			}
 			else if (source == "mousedelta")
 			{
-				const float values[2] = { static_cast<float>(_input->mouse_movement_delta_x()), static_cast<float>(_input->mouse_movement_delta_y()) };
+				const float values[3] = { static_cast<float>(_input->mouse_movement_delta_x()), static_cast<float>(_input->mouse_movement_delta_y()), static_cast<float>(_input->mouse_wheel_delta()) };
 
-				set_uniform_value(variable, values, 2);
+				set_uniform_value(variable, values, 3);
 			}
 			else if (source == "mousebutton")
 			{

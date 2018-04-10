@@ -162,6 +162,8 @@ namespace reshade
 
 						input._mouse_raw_delta[0] = static_cast<short>(raw_data.data.mouse.lLastX);
 						input._mouse_raw_delta[1] = static_cast<short>(raw_data.data.mouse.lLastY);
+
+						input._has_raw_input = true;
 						break;
 					case RIM_TYPEKEYBOARD:
 						is_keyboard_message = true;

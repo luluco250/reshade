@@ -2397,8 +2397,88 @@ void reshade::runtime::draw_variable_editor()
 
 			// Display tooltip
 			if (const std::string_view tooltip = variable.annotation_as_string("ui_tooltip");
-				!tooltip.empty() && ImGui::IsItemHovered())
-				ImGui::SetTooltip("%s", tooltip.data());
+				//!tooltip.empty() && ImGui::IsItemHovered())
+				ImGui::IsItemHovered())
+			{
+				std::ostringstream ss;
+
+				if (!tooltip.empty())
+					ss << tooltip << "\n\nDefault: ";
+				else
+					ss << "Default: ";
+
+				auto get_ui_items = [&]()
+				{
+					std::vector<std::string_view> items;
+					auto ui_items = variable.annotation_as_string("ui_items");
+
+					if (ui_items.empty())
+						return items;
+
+					size_t offset;
+
+					for (
+						size_t offset = 0, end;
+						(end = ui_items.find('\0', offset)) != std::string::npos;
+						offset = end + 1)
+					{
+						items.push_back(ui_items.data() + offset);
+					}
+
+					return items;
+				};
+
+
+				switch (variable.type.base)
+				{
+				case reshadefx::type::t_bool:
+				{
+					std::string_view off, on;
+					auto ui_items = get_ui_items();
+
+					if (ui_items.empty()) {
+						off = "Off";
+						on = "On";
+					} else {
+						off = ui_items[0];
+						on = ui_items.size() > 1 ? ui_items[1] : "On";
+					}
+
+					for (unsigned int i = 0; i < variable.type.components(); ++i)
+						ss << (variable.initializer_value.as_uint[i] ? on : off) << ' ';
+					break;
+				}
+				case reshadefx::type::t_uint:
+				{
+					for (unsigned int i = 0; i < variable.type.components(); ++i)
+						ss << variable.initializer_value.as_uint[i] << ' ';
+					break;
+				}
+				case reshadefx::type::t_int:
+				{
+					for (unsigned int i = 0; i < variable.type.components(); ++i)
+						ss << variable.initializer_value.as_int[i] << ' ';
+					break;
+				}
+				case reshadefx::type::t_float:
+				{
+					if (variable.annotation_as_string("ui_type") == "color")
+						for (unsigned int i = 0; i < variable.type.components(); ++i)
+							ss << (int)(variable.initializer_value.as_float[i] * 255) << ' ';
+					else
+						for (unsigned int i = 0; i < variable.type.components(); ++i)
+							ss << variable.initializer_value.as_float[i] << ' ';
+					break;
+				}
+				default:
+					ImGui::SetTooltip("%s", tooltip.data());
+					return;
+				}
+
+				auto text = ss.str();
+
+				ImGui::SetTooltip("%s", text.c_str());
+			}
 
 			// Create context menu
 			if (ImGui::BeginPopupContextItem("##context"))
